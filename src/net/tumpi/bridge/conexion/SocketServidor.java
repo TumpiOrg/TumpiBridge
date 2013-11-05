@@ -60,7 +60,8 @@ public class SocketServidor {
                 while (!serverSocket.isClosed()) {
                     try {
                         Cliente cliente;
-                        cliente = new Cliente(serverSocket.accept(), SocketServidor.this);
+                        Socket socket = serverSocket.accept();
+                        cliente = new Cliente(socket, SocketServidor.this);
                         clientes.put(cliente.getId(), cliente);
                         cliente.startListeningClient();
                         fireClientConnectedEvent(cliente.getId());
@@ -76,9 +77,9 @@ public class SocketServidor {
         thread_buscar_clientes.interrupt();
     }
 
-    public void enviarMensajeServer(String id_cliente, String mensaje) throws IOException {
-        clientes.get(id_cliente).enviarMensaje(mensaje);
-        Log.$.info("Mensaje enviado a " + id_cliente + " : " + mensaje);
+    public void enviarMensajeServer(String clientId, String mensaje) throws IOException {
+        clientes.get(clientId).enviarMensaje(mensaje);
+        Log.$.info("Mensaje enviado a " + clientId + " : " + mensaje);
     }
 
     public int getClientsCount() {

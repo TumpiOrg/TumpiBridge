@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="error">
     <Appenders>
-        <File name="FILEOTHER" fileName="/home/jorge-mint/tumpi-bridge-other.log ">
+        <File name="FILEOTHER" fileName="/home/jorge/tumpi-bridge-other.log ">
             <PatternLayout pattern="%d %-5p %c{2} - %m%n"/>
         </File>
-        <File name="FILEINFO" fileName="/home/jorge-mint/tumpi-bridge.log ">
+        <File name="FILEINFO" fileName="/home/jorge/tumpi-bridge.log ">
             <PatternLayout pattern="%d %-5p %c{2} - %m%n"/>
         </File>
-        <File name="FILEERROR" fileName="/home/jorge-mint/tumpi-bridge-error.log ">
+        <File name="FILEERROR" fileName="/home/jorge/tumpi-bridge-error.log ">
             <PatternLayout pattern="%d %-5p %c{2} - %m%n"/>
         </File>
         <Async name="ASYNCOther">

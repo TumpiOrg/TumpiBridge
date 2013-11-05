@@ -40,7 +40,27 @@ public class ServerManager implements ServerSocketListener {
         }
     }
 
-    private void procesarLogIn(String id, String tipo, String nick) {
+    @Override
+    public void onMessageReceived(String id, String data) {
+        Log.$.info("Mensaje recibido de " + id + " : " + data);
+        String tipo = getType(data);
+        String idDest = getId(data);
+        switch (idDest) {
+            case "log":
+                procesarLogIn(id, tipo, getMessage(data));
+                break;
+            case "exit":
+                procesarExit(id);
+                break;
+            default:
+                procesarMessage(id, tipo, idDest, getMessage(data));
+                break;
+        }
+    }
+
+    private void procesarLogIn(String id, String tipo, String message) {
+        final String nick = message.substring(0, message.lastIndexOf("|"));
+        final String uuid = message.substring(message.lastIndexOf("|") + 1);
         switch (tipo) {
             case "c":
                 String idServer = getServerIdByNick(nick);
@@ -48,7 +68,7 @@ public class ServerManager implements ServerSocketListener {
                     TumpiServer server = getServer(idServer);
                     if (!server.isClient(id)) {
                         server.putClient(new TumpiClient(id));
-                        sendClientNotification(server.id, id, "on");
+                        sendClientNotification(server.id, uuid, "on");
                         sendLoginResponse(id, 1);
                     }
                 } else {
@@ -56,15 +76,23 @@ public class ServerManager implements ServerSocketListener {
                 }
                 break;
             case "s":
-                String id_server_log = getServerIdByNick(nick);
-                if (id_server_log == null) {
+                String serverId = getServerIdByNick(nick);
+                if (serverId == null) {
                     servidores.put(id, new TumpiServer(nick, id));
-                    System.out.println("Registrado servidor con nick: " + nick + " y id: " + id);
+                    Log.$.info("Registrado servidor con nick: " + nick + " y id: " + id);
                     sendLoginResponse(id, 1);
                 } else {
                     sendLoginResponse(id, 0);
                 }
                 break;
+        }
+    }
+
+    private void procesarExit(String id) {
+        try {
+            socket.clientes.get(id).close();
+        } catch (IOException ex) {
+            Log.$.error("Error al desconectar al cliente", ex);
         }
     }
 
@@ -97,48 +125,6 @@ public class ServerManager implements ServerSocketListener {
         }
     }
 
-    private void procesarExit(String id) {
-        try {
-            socket.clientes.get(id).close();
-        } catch (IOException ex) {
-            Log.$.error("Error al desconectar al cliente", ex);
-        }
-    }
-
-    private void sendClientNotification(String idServer, String idCliente, String estado) {
-        try {
-            socket.enviarMensajeServer(idServer, "b:client_" + estado + "|" + idCliente);
-        } catch (IOException ex) {
-            Log.$.error("Error al enviar la notificacion de nuevo cliente", ex);
-        }
-    }
-
-    private void sendLoginResponse(String id, int tipo) {
-        try {
-            socket.enviarMensajeServer(id, "b:log|" + tipo);
-        } catch (IOException ex) {
-            Log.$.error("Error al enviar respuesta al Log-In", ex);
-        }
-    }
-
-    @Override
-    public void onMessageReceived(String id, String message) {
-        Log.$.info("Mensaje recibido de " + id + " : " + message);
-        String tipo = getType(message);
-        String idDest = getId(message);
-        switch (idDest) {
-            case "log":
-                procesarLogIn(id, tipo, getMessage(message));
-                break;
-            case "exit":
-                procesarExit(id);
-                break;
-            default:
-                procesarMessage(id, tipo, idDest, getMessage(message));
-                break;
-        }
-    }
-
     @Override
     public void onClientConnected(String id) {
         Log.$.info("Conexion abierta >> " + id);
@@ -150,7 +136,7 @@ public class ServerManager implements ServerSocketListener {
             TumpiServer server = getServer(id);
             try {
                 Map<String, Cliente> clientes_socket = socket.clientes;
-                for (TumpiClient cliente_tumpi: server) {
+                for (TumpiClient cliente_tumpi : server) {
                     Cliente cliente_socket = clientes_socket.get(cliente_tumpi.id);
                     cliente_socket.close();
                 }
@@ -172,10 +158,25 @@ public class ServerManager implements ServerSocketListener {
         Log.$.info("Cliente desconectado >> " + id);
     }
 
+    private void sendClientNotification(String idServer, String uuid, String estado) {
+        try {
+            socket.enviarMensajeServer(idServer, "b:client_" + estado + "|" + uuid);
+        } catch (IOException ex) {
+            Log.$.error("Error al enviar la notificacion de nuevo cliente", ex);
+        }
+    }
+
+    private void sendLoginResponse(String id, int tipo) {
+        try {
+            socket.enviarMensajeServer(id, "b:log|" + tipo);
+        } catch (IOException ex) {
+            Log.$.error("Error al enviar respuesta al Log-In", ex);
+        }
+    }
+
     private String getServerIdByNick(String nick) {
         Collection<TumpiServer> values = servidores.values();
         for (TumpiServer server : values) {
-            System.out.println("Nombre del servidor de la coleccion: " + server.nombre);
             if (server.nombre.equals(nick)) {
                 return server.id;
             }
@@ -202,4 +203,5 @@ public class ServerManager implements ServerSocketListener {
     private String getType(String men) {
         return men.substring(0, men.indexOf(":"));
     }
+
 }
